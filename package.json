@@ -1,2 +1,12 @@
-Vercel Deployments 裡面有沒有寫：
-Next.js
+{
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }
+}
