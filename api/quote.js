@@ -1,18 +1,21 @@
 export default async function handler(req, res) {
+  const { symbol } = req.query;
 
-  const symbol = req.query.symbol;
+  if (!symbol) {
+    return res.status(400).json({ error: "missing symbol" });
+  }
 
   const apiKey = process.env.FINNHUB_KEY;
 
-  const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`;
+  try {
+    const response = await fetch(
+      `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`
+    );
 
-  const response = await fetch(url);
-  const data = await response.json();
+    const data = await response.json();
 
-  res.status(200).json({
-    symbol: symbol,
-    price: data.c,
-    change: data.d,
-    percent: data.dp
-  });
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: "fetch failed" });
+  }
 }
