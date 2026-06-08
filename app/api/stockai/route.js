@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-// 🎯 第一行維持最強動態護甲，絕不卡死
+// 🎯 確保維持最高動態護甲，絕不卡死網頁
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
@@ -22,7 +22,26 @@ export async function GET(req) {
           },
           {
             role: "user",
-            content: `請幫我針對美股代號 ${symbol} 進行簡短的盤後關鍵分析與下週操作操作建議。`
+            content: `請幫我針對美股代號 ${symbol} 進行簡短的盤後關鍵分析與下週操作建議。`
           }
         ],
-        temperature
+        temperature: 0.7,
+      });
+
+      const aiResult = response.choices[0].message.content;
+      
+      // 🎯 精準對齊前端的 json.result
+      return Response.json({ result: aiResult });
+
+    } catch (openAiError) {
+      console.error("OpenAI API 失敗:", openAiError);
+      return Response.json({ 
+        result: `❌ AI 分析失敗：${openAiError.message || "請檢查 Vercel 的 OPENAI_API_KEY 是否正確或過期。"}` 
+      });
+    }
+
+  } catch (error) {
+    console.error("系統錯誤:", error);
+    return Response.json({ result: `❌ 系統錯誤：${error.message}` });
+  }
+}
