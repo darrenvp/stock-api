@@ -10,8 +10,8 @@ export async function GET(req) {
       return Response.json({ result: "❌ 系統錯誤：找不到 GEMINI_API_KEY 環境變數，請去 Vercel 設定。" });
     }
 
-    // 🎯 終極降維打擊：改走 v1 穩定通道，強制繞過 v1beta 的新專案模型權限審查地雷
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 🎯 終極修正：改用最經典相容的 v1beta 搭配 100% 絕對存在、免設定的 gemini-pro 模型
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
     const response = await fetch(geminiUrl, {
       method: "POST",
@@ -35,6 +35,21 @@ export async function GET(req) {
     });
 
     const json = await response.json();
+
+    if (!response.ok) {
+      throw new Error(json.error?.message || "Google 伺服器拒絕請求");
+    }
+
+    // 🎯 精準提取 gemini-pro 的文字結構
+    const aiResult = json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果";
+
+    return Response.json({ result: aiResult });
+
+  } catch (error) {
+    console.error("Gemini 終極錯誤:", error);
+    return Response.json({ result: `❌ 免費 AI 分析失敗：${error.message}` });
+  }
+}    const json = await response.json();
 
     if (!response.ok) {
       throw new Error(json.error?.message || "Google 伺服器拒絕請求");
