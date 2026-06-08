@@ -44,4 +44,14 @@ export async function GET(req) {
     console.error("系統錯誤:", error);
     return Response.json({ result: `❌ 系統錯誤：${error.message}` });
   }
+}      console.error("OpenAI API 失敗:", openAiError);
+      return Response.json({ 
+        result: `❌ AI 分析失敗：${openAiError.message || "請檢查 Vercel 的 OPENAI_API_KEY 是否正確或過期。"}` 
+      });
+    }
+
+  } catch (error) {
+    console.error("系統錯誤:", error);
+    return Response.json({ result: `❌ 系統錯誤：${error.message}` });
+  }
 }
