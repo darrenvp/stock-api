@@ -10,7 +10,7 @@ export async function GET(req) {
       return Response.json({ result: "❌ 系統錯誤：找不到 GEMINI_API_KEY 環境變數，請去 Vercel 設定。" });
     }
 
-    // 🎯 終極修正：改用最經典相容的 v1beta 搭配 100% 絕對存在、免設定的 gemini-pro 模型
+    // 🎯 這次真的改對了！v1beta 通道搭配 100% 穩定的元老級核心模型 gemini-pro
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
     const response = await fetch(geminiUrl, {
@@ -47,21 +47,6 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("Gemini 終極錯誤:", error);
-    return Response.json({ result: `❌ 免費 AI 分析失敗：${error.message}` });
-  }
-}    const json = await response.json();
-
-    if (!response.ok) {
-      throw new Error(json.error?.message || "Google 伺服器拒絕請求");
-    }
-
-    // 解析 Google 官方標準回傳結構
-    const aiResult = json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果";
-
-    return Response.json({ result: aiResult });
-
-  } catch (error) {
-    console.error("Gemini 核心錯誤:", error);
     return Response.json({ result: `❌ 免費 AI 分析失敗：${error.message}` });
   }
 }
