@@ -39,11 +39,9 @@ export default function Home() {
     setLoadingAI((prev) => ({ ...prev, [symbol]: true }));
 
     try {
-      // 🎯 修正：拿掉多打的斜線，改呼叫全新的乾淨通道 /api/stockai
       const res = await fetch(`/api/stockai?symbol=${symbol}`);
       const json = await res.json();
 
-      // 🎯 修正：後端回傳的是 result 欄位，精準對齊 json.result
       setAnalysis((prev) => ({
         ...prev,
         [symbol]: json.result || "暫無分析結果",
@@ -60,7 +58,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-
     const t = setInterval(fetchData, 10000);
     return () => clearInterval(t);
   }, []);
@@ -69,11 +66,11 @@ export default function Home() {
     <div style={{ padding: 20, fontFamily: "Arial" }}>
       <h1>📊 Stock AI Dashboard</h1>
 
-      <button onClick={fetchData} style={{ padding: "8px 12px", cursor: "pointer" }}>
+      <button onClick={fetchData} style={{ padding: "8px 12px", cursor: "pointer", marginBottom: 10 }}>
         Refresh Prices
       </button>
 
-      {loading && <p>Loading prices...</p>}
+      {loading && Object.keys(data).length === 0 && <p>Loading prices...</p>}
 
       <div
         style={{
@@ -84,8 +81,8 @@ export default function Home() {
         }}
       >
         {stocks.map((symbol) => {
-          const s = data[symbol];
-          if (!s) return null;
+          // 🎯 修正：如果資料還沒下來，我們給它空物件預設值 {}，絕對不要 return null 導致網頁罷工！
+          const s = data[symbol] || {};
 
           return (
             <div
@@ -98,20 +95,20 @@ export default function Home() {
             >
               <h2>{symbol}</h2>
 
-              {/* 🎯 修正：精準對齊你後端吐出來的全新漂亮格式：price, change, high, low */}
-              <p>💰 Price: {s.price}</p>
+              {/* 🎯 修正：加上安全保護，沒資料就顯示載入中，絕不讓 JavaScript 崩潰 */}
+              <p>💰 Price: {s.price || "載入中..."}</p>
               <p style={{ color: s.rawChange >= 0 ? "green" : "red" }}>
-                📊 Change: {s.change}
+                📊 Change: {s.change || "--%"}
               </p>
 
-              <p>🔼 High: {s.high}</p>
-              <p>🔽 Low: {s.low}</p>
+              <p>🔼 High: {s.high || "載入中..."}</p>
+              <p>🔽 Low: {s.low || "載入中..."}</p>
 
               <hr />
 
               <button
                 onClick={() => runAnalyze(symbol)}
-                disabled={loadingAI[symbol]}
+                disabled={loadingAI[symbol] || !s.price}
                 style={{ padding: "6px 10px", cursor: "pointer" }}
               >
                 {loadingAI[symbol] ? "分析中..." : "🤖 AI 分析"}
