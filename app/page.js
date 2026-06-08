@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-// 💡 強制動態渲染，徹底破除 Vercel 靜態頁面快取
-export const dynamic = "force-dynamic";
-
 const stocks = ["NVDA", "AMD", "TSLA", "PLTR"];
 
 export default function Home() {
@@ -13,13 +10,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingAI, setLoadingAI] = useState({});
 
-  // 📊 抓股價
+  // 📊 抓股價（加上隨機參數，防止股價卡死）
   const fetchData = async () => {
     setLoading(true);
     try {
       const results = await Promise.all(
         stocks.map(async (symbol) => {
-          const res = await fetch(`/api/quote?symbol=${symbol}`);
+          // 💡 加上 Date.now()，強迫 Vercel 每次都要抓最新股價
+          const res = await fetch(`/api/quote?symbol=${symbol}&_t=${Date.now()}`);
           const json = await res.json();
           return { symbol, json };
         })
@@ -42,8 +40,9 @@ export default function Home() {
     setLoadingAI((prev) => ({ ...prev, [symbol]: true }));
 
     try {
-      // 🎯 核心鎖定：確保精準呼叫新路由，不留任何舊路徑影子
-      const res = await fetch(`/api/stockai?symbol=${symbol}`);
+      // 🎯 核心殺招：在網址尾巴強制加上 &_t=${Date.now()}
+      // 這樣每次點擊的網址都完全不同，Vercel 就算想用舊快取或 OpenAI 頂替也絕對沒辦法！
+      const res = await fetch(`/api/stockai?symbol=${symbol}&_t=${Date.now()}`);
       const json = await res.json();
 
       setAnalysis((prev) => ({
@@ -68,8 +67,8 @@ export default function Home() {
 
   return (
     <div style={{ padding: 20, fontFamily: "Arial" }}>
-      {/* 🎯 這裡多加了 v2 標記，用來強迫瀏覽器和 Vercel 辨識檔案已全面更新 */}
-      <h1>📊 Stock AI Dashboard v2</h1>
+      {/* 🎯 標題改為 v3，讓我們一眼認出更新成功 */}
+      <h1>📊 Stock AI Dashboard v3</h1>
 
       <button onClick={fetchData} style={{ padding: "8px 12px", cursor: "pointer", marginBottom: 10 }}>
         Refresh Prices
