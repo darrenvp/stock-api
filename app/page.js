@@ -1,5 +1,5 @@
 "use client";
-
+export const dynamic = "force-dynamic"; // 💡 強制動態渲染，不准做成靜態死網頁
 import { useEffect, useState } from "react";
 
 const stocks = ["NVDA", "AMD", "TSLA", "PLTR"];
