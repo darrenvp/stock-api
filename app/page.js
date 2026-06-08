@@ -1,6 +1,9 @@
 "use client";
-export const dynamic = "force-dynamic"; // 💡 強制動態渲染，不准做成靜態死網頁
+
 import { useEffect, useState } from "react";
+
+// 💡 強制動態渲染，徹底破除 Vercel 靜態頁面快取
+export const dynamic = "force-dynamic";
 
 const stocks = ["NVDA", "AMD", "TSLA", "PLTR"];
 
@@ -39,6 +42,7 @@ export default function Home() {
     setLoadingAI((prev) => ({ ...prev, [symbol]: true }));
 
     try {
+      // 🎯 核心鎖定：確保精準呼叫新路由，不留任何舊路徑影子
       const res = await fetch(`/api/stockai?symbol=${symbol}`);
       const json = await res.json();
 
@@ -64,7 +68,8 @@ export default function Home() {
 
   return (
     <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h1>📊 Stock AI Dashboard</h1>
+      {/* 🎯 這裡多加了 v2 標記，用來強迫瀏覽器和 Vercel 辨識檔案已全面更新 */}
+      <h1>📊 Stock AI Dashboard v2</h1>
 
       <button onClick={fetchData} style={{ padding: "8px 12px", cursor: "pointer", marginBottom: 10 }}>
         Refresh Prices
@@ -81,7 +86,6 @@ export default function Home() {
         }}
       >
         {stocks.map((symbol) => {
-          // 🎯 修正：如果資料還沒下來，我們給它空物件預設值 {}，絕對不要 return null 導致網頁罷工！
           const s = data[symbol] || {};
 
           return (
@@ -95,7 +99,6 @@ export default function Home() {
             >
               <h2>{symbol}</h2>
 
-              {/* 🎯 修正：加上安全保護，沒資料就顯示載入中，絕不讓 JavaScript 崩潰 */}
               <p>💰 Price: {s.price || "載入中..."}</p>
               <p style={{ color: s.rawChange >= 0 ? "green" : "red" }}>
                 📊 Change: {s.change || "--%"}
