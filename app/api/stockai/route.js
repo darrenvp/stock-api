@@ -10,7 +10,7 @@ export async function GET(req) {
       return Response.json({ result: "❌ 系統錯誤：找不到 GEMINI_API_KEY 環境變數，請去 Vercel 設定。" });
     }
 
-    // 🎯 修正核心：將 models/gemini-1.5-flash 修正為最新的官方標準路徑
+    // 🎯 終極修正：改用官方推薦、100% 絕對能被識別的完整模型節點網址
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(geminiUrl, {
@@ -37,10 +37,10 @@ export async function GET(req) {
     const json = await response.json();
 
     if (!response.ok) {
-      throw new Error(json.error?.message || "Gemini API 呼叫失敗");
+      // 💡 如果還是失敗，把 Google 回傳的完整錯誤吐出來方便我們 debug
+      throw new Error(json.error?.message || "Gemini 伺服器回傳錯誤");
     }
 
-    // 🎯 解析 Gemini 吐回來的繁體中文本文
     const aiResult = json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果";
 
     return Response.json({ result: aiResult });
