@@ -1,138 +1,56 @@
-"use client";
+// 🎯 這是 Pages Router (pages/api/analyze.js) 的標準寫法
 
-import { useEffect, useState } from "react";
+export default async function handler(req, res) {
+  // 只允許 GET 請求
+  if (req.method !== 'GET') {
+    return res.status(405).json({ result: '❌ 不支援的請求方法' });
+  }
 
-const stocks = ["NVDA", "AMD", "TSLA", "PLTR"];
+  try {
+    const symbol = req.query.symbol || "NVDA";
+    const apiKey = process.env.GEMINI_API_KEY;
 
-export default function Home() {
-  const [data, setData] = useState({});
-  const [analysis, setAnalysis] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [loadingAI, setLoadingAI] = useState({});
-
-  // 📊 抓股價（加上隨機參數，防止股價卡死）
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const results = await Promise.all(
-        stocks.map(async (symbol) => {
-          // 💡 加上 Date.now()，強迫 Vercel 每次都要抓最新股價
-          const res = await fetch(`/api/quote?symbol=${symbol}&_t=${Date.now()}`);
-          const json = await res.json();
-          return { symbol, json };
-        })
-      );
-
-      const map = {};
-      results.forEach((r) => {
-        map[r.symbol] = r.json;
-      });
-
-      setData(map);
-    } catch (error) {
-      console.error("前端抓取股價失敗:", error);
-    }
-    setLoading(false);
-  };
-
-  // 🤖 AI 分析
-  const runAnalyze = async (symbol) => {
-    setLoadingAI((prev) => ({ ...prev, [symbol]: true }));
-
-    try {
-      // 🎯 核心殺招：在網址尾巴強制加上 &_t=${Date.now()}
-      // 這樣每次點擊的網址都完全不同，Vercel 就算想用舊快取或 OpenAI 頂替也絕對沒辦法！
-      const res = await fetch(`/api/stockai?symbol=${symbol}&_t=${Date.now()}`);
-      const json = await res.json();
-
-      setAnalysis((prev) => ({
-        ...prev,
-        [symbol]: json.result || "暫無分析結果",
-      }));
-    } catch (err) {
-      setAnalysis((prev) => ({
-        ...prev,
-        [symbol]: "❌ 前端請求失敗",
-      }));
+    if (!apiKey) {
+      return res.status(500).json({ result: "❌ 系統錯誤：找不到 GEMINI_API_KEY 環境變數，請去 Vercel 設定。" });
     }
 
-    setLoadingAI((prev) => ({ ...prev, [symbol]: false }));
-  };
+    // 🎯 這是全宇宙唯一能通的黃金標準：必須是 v1beta 搭配 gemini-1.5-flash
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-  useEffect(() => {
-    fetchData();
-    const t = setInterval(fetchData, 10000);
-    return () => clearInterval(t);
-  }, []);
+    const response = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `你是一位精通美股分析的 AI 助手。請幫我針對美股代號 ${symbol} 進行簡短的盤後關鍵分析與下週操作建議。請一律用繁體中文回答，並適當換行以便閱讀。`
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+        }
+      }),
+    });
 
-  return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      {/* 🎯 標題改為 v3，讓我們一眼認出更新成功 */}
-      <h1>📊 Stock AI Dashboard v3</h1>
+    const json = await response.json();
 
-      <button onClick={fetchData} style={{ padding: "8px 12px", cursor: "pointer", marginBottom: 10 }}>
-        Refresh Prices
-      </button>
+    if (!response.ok) {
+      throw new Error(json.error?.message || "Google 伺服器拒絕請求");
+    }
 
-      {loading && Object.keys(data).length === 0 && <p>Loading prices...</p>}
+    // 解析 Google 官方最標準的文字提取結構
+    const aiResult = json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果";
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 10,
-          marginTop: 20,
-        }}
-      >
-        {stocks.map((symbol) => {
-          const s = data[symbol] || {};
+    return res.status(200).json({ result: aiResult });
 
-          return (
-            <div
-              key={symbol}
-              style={{
-                border: "1px solid #ddd",
-                padding: 15,
-                borderRadius: 8,
-              }}
-            >
-              <h2>{symbol}</h2>
-
-              <p>💰 Price: {s.price || "載入中..."}</p>
-              <p style={{ color: s.rawChange >= 0 ? "green" : "red" }}>
-                📊 Change: {s.change || "--%"}
-              </p>
-
-              <p>🔼 High: {s.high || "載入中..."}</p>
-              <p>🔽 Low: {s.low || "載入中..."}</p>
-
-              <hr />
-
-              <button
-                onClick={() => runAnalyze(symbol)}
-                disabled={loadingAI[symbol] || !s.price}
-                style={{ padding: "6px 10px", cursor: "pointer" }}
-              >
-                {loadingAI[symbol] ? "分析中..." : "🤖 AI 分析"}
-              </button>
-
-              {analysis[symbol] && (
-                <div style={{ 
-                  marginTop: 10, 
-                  padding: 10, 
-                  backgroundColor: "#f9f9f9", 
-                  borderRadius: 4,
-                  borderLeft: "4px solid orange",
-                  whiteSpace: "pre-wrap",
-                  color: "#333"
-                }}>
-                  {analysis[symbol]}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  } catch (error) {
+    console.error("Gemini 最終錯誤:", error);
+    return res.status(500).json({ result: `❌ 免費 AI 分析失敗：${error.message}` });
+  }
 }
