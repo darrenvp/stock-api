@@ -1,55 +1,26 @@
-// 🎯 FORCE_REDEPLOY_TAG: REFRESH_VERCEL_CACHE_2026_06_08
-// 這行註解是為了強迫 Vercel 判斷檔案內容已改變，徹底粉碎舊快取！
-
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const symbol = searchParams.get("symbol") || "NVDA";
-
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return Response.json({ result: "❌ 系統錯誤：找不到 GEMINI_API_KEY 環境變數，請去 Vercel 設定。" });
-    }
 
-    // 🎯 這是全宇宙唯一能通的黃金標準：必須是 v1beta 搭配 gemini-1.5-flash
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    if (!apiKey) return Response.json({ result: "❌ 找不到 API_KEY" });
 
-    const response = await fetch(geminiUrl, {
+    // 🎯 唯一標準：v1beta + gemini-1.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `你是一位精通美股分析的 AI 助手。請幫我針對美股代號 ${symbol} 進行簡短的盤後關鍵分析與下週操作建議。請一律用繁體中文回答，並適當換行以便閱讀。`
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-        }
+        contents: [{ parts: [{ text: `你是一位精通美股分析的 AI 助手。請幫我針對美股代號 ${symbol} 進行簡短的盤後關鍵分析與下週操作建議。請一律用繁體中文回答，並適當換行以便閱讀。` }] }]
       }),
     });
 
     const json = await response.json();
-
-    if (!response.ok) {
-      throw new Error(json.error?.message || "Google 伺服器拒絕請求");
-    }
-
-    // 解析 Google 官方最標準的文字提取結構
-    const aiResult = json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果";
-
-    return Response.json({ result: aiResult });
-
-  } catch (error) {
-    console.error("Gemini 最終錯誤:", error);
-    return Response.json({ result: `❌ 免費 AI 分析失敗：${error.message}` });
+    return Response.json({ result: json.candidates?.[0]?.content?.parts?.[0]?.text || "暫無分析結果" });
+  } catch (e) {
+    return Response.json({ result: `❌ 錯誤：${e.message}` });
   }
 }
