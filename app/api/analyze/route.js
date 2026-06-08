@@ -1,3 +1,6 @@
+// 🎯 FORCE_REDEPLOY_TAG: REFRESH_VERCEL_CACHE_2026_06_08
+// 這行註解是為了強迫 Vercel 判斷檔案內容已改變，徹底粉碎舊快取！
+
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
