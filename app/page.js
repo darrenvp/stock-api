@@ -36,7 +36,7 @@ export default function Home() {
     setLoadingAI((prev) => ({ ...prev, [symbol]: true }));
 
     try {
-      const res = await fetch(`/api/analyze?symbol=${symbol}`);
+      const res = await fetch(`//api/stockai?symbol=${symbol}`);
       const json = await res.json();
 
       setAnalysis((prev) => ({
